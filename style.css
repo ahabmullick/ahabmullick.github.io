@@ -1,0 +1,240 @@
+/* The Programme
+   Three voices and no others: the name; small capitals for every label and fact;
+   one reading size for the biography. Everything hangs from four verticals of a
+   twelve-column grid (columns 1, 4, 7 and 11), at the top of the screen and the bottom,
+   on every view. */
+
+@property --shade-top { syntax: '<number>'; inherits: true; initial-value: 0.42; }
+@property --shade-bot { syntax: '<number>'; inherits: true; initial-value: 0.62; }
+
+:root {
+  --ink: #f3f1ec;
+  --dim: rgba(243, 241, 236, 0.56);
+  --line: rgba(243, 241, 236, 0.24);
+  --edge: clamp(14px, 1.25vw, 24px);
+  --gap: clamp(10px, 1.25vw, 24px);
+  --cap: clamp(10px, 0.7vw, 12.5px);   /* the small capitals; they grow a little on a large screen */
+  --row: calc(var(--cap) * 1.8);       /* one line of the programme */
+  --drop: calc(var(--cap) * 0.54);     /* how far a centred line of capitals sits above the foot of its row */
+  --name: clamp(44px, 6.4vw, 132px);
+  --mast: calc(var(--edge) * 2 + var(--name) * 0.74);   /* height the name occupies */
+  --sans: 'Switzer', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --out: cubic-bezier(0.16, 1, 0.3, 1);
+  --inout: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { background: #000; }
+html, body { height: 100%; margin: 0; }
+body {
+  overflow: hidden; overscroll-behavior: none;
+  background: #000; color: var(--ink);
+  font-family: var(--sans); font-size: var(--cap); font-weight: 500; line-height: 1.4;
+  letter-spacing: 0.055em; text-transform: uppercase; font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+}
+h1, h2, p, ol, ul, figure, blockquote { margin: 0; padding: 0; font: inherit; letter-spacing: inherit; }
+ol, ul { list-style: none; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+i { font-style: normal; }
+:focus-visible { outline: 1px solid var(--ink); outline-offset: 4px; }
+::selection { background: var(--ink); color: #000; }
+[hidden] { display: none !important; }
+
+/* The twelve columns, wherever they are needed */
+.mast, .cue, .film__strip, .band, .index a { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gap); }
+
+/* Quiet links brighten; actions carry a hairline that lifts on hover */
+.nav a, .film__nav a, #to-top { color: var(--dim); transition: color 0.25s; }
+.nav a:hover, .nav a.is-on, .film__nav a:hover, #to-top:hover { color: var(--ink); }
+.cue__watch { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; text-decoration-color: var(--dim); transition: text-decoration-color 0.25s; }
+.cue__watch:hover { text-decoration-color: transparent; }
+.facts a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; text-decoration-color: transparent; transition: text-decoration-color 0.25s; }
+.facts a:hover { text-decoration-color: var(--dim); }
+
+/* ---------- The screen ---------- */
+.screen { position: fixed; inset: 0; z-index: 0; background: #000; overflow: hidden; container-type: size; touch-action: none; }
+.fine .screen.is-live { cursor: none; }
+.plate { position: absolute; inset: 0; opacity: 0; will-change: transform; }
+.plate.is-on { opacity: 1; }
+/* For the instant before its still arrives: the film's own light, out of focus. */
+.plate__soft { position: absolute; left: -6%; top: -6%; width: 112%; height: 112%; object-fit: cover; object-position: 50% calc(var(--fy, 0.5) * 100%); filter: blur(30px) brightness(0.8); }
+.plate__still { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% calc(var(--fy, 0.5) * 100%); opacity: 0; transition: opacity 0.6s var(--inout); will-change: transform; }
+.plate.is-still .plate__still { opacity: 1; }
+/* The footage covers the screen whatever its shape; the script sizes it once the film reports its own. */
+/* --fy is where the crop is anchored, top (0) to bottom (1), for a film whose subject sits high or low. */
+.plate__film { position: absolute; left: 50%; top: calc(var(--fy, 0.5) * 100%); width: max(100cqw, 177.78cqh); height: max(100cqh, 56.25cqw); transform: translate(-50%, calc(var(--fy, 0.5) * -100%)) scale(1.012); opacity: 0; transition: opacity 1s var(--inout); }
+.plate.is-playing .plate__film { opacity: 1; }
+.plate__film iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; }
+.veil { position: absolute; inset: 0; background: #000; opacity: 1; }
+/* Shade under the lettering, as deep as each film needs (set per film from its own brightness). */
+.shade {
+  position: absolute; inset: 0; pointer-events: none;
+  transition: --shade-top 1.2s linear, --shade-bot 1.2s linear;
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, var(--shade-top)) 0%, rgba(0, 0, 0, calc(var(--shade-top) * 0.5)) 15%, rgba(0, 0, 0, 0) 36%),
+    linear-gradient(to top, rgba(0, 0, 0, var(--shade-bot)) 0%, rgba(0, 0, 0, calc(var(--shade-bot) * 0.74)) 36%, rgba(0, 0, 0, 0) 72%);
+}
+
+/* Lettering over a moving picture carries a soft dark halo, as a subtitle does: unseen on a
+   dark frame, and the difference between readable and not on a bright one. */
+[data-view="home"] { --dim: rgba(243, 241, 236, 0.7); }   /* quiet lettering needs more body over a picture than over black */
+[data-view="home"] .mast, .programme, .pointer { text-shadow: 0 0 1px rgba(0, 0, 0, 0.3), 0 0 16px rgba(0, 0, 0, 0.6); }
+[data-view="home"] .name { text-shadow: 0 0 60px rgba(0, 0, 0, 0.35); }
+
+/* ---------- The name, and what stays with it ---------- */
+.mast { position: fixed; left: 0; right: 0; top: 0; z-index: 12; padding: var(--edge); align-items: start; pointer-events: none; }
+.mast > * { pointer-events: auto; }
+.name { grid-column: 1 / span 6; justify-self: start; margin-left: -0.035em; font-size: var(--name); font-weight: 500; line-height: 0.74; letter-spacing: -0.045em; text-transform: none; white-space: nowrap; }
+.name a { display: block; }
+/* The mask the name rises through; padded so no ascender is shaved. */
+.name .line { display: block; overflow: hidden; padding: 0.16em 0.07em 0.1em; margin: -0.16em -0.07em -0.1em; }
+.name .line > span { display: block; text-box: trim-both cap alphabetic; }
+.role { grid-column: 7 / span 3; text-box: trim-both cap alphabetic; }
+.nav { grid-column: 11 / span 2; text-box: trim-both cap alphabetic; }
+.nav a { padding-block: 3px; }
+.nav a::after { content: '\A'; white-space: pre; }
+@supports not (text-box: trim-both cap alphabetic) {
+  .role, .nav { margin-top: -0.33em; }
+}
+
+/* ---------- The programme ---------- */
+.programme { position: fixed; left: var(--edge); right: var(--edge); bottom: calc(var(--edge) - var(--drop)); z-index: 10; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0s 0.3s; }
+[data-view="home"] .programme { opacity: 1; visibility: visible; transition: opacity 0.7s 0.3s, visibility 0s; }
+.list { width: calc((100% - 11 * var(--gap)) / 4 + 2 * var(--gap)); pointer-events: auto; }
+.row { display: grid; grid-template-columns: 2.7em minmax(0, 1fr); align-items: center; height: var(--row); color: var(--dim); white-space: nowrap; transition: color 0.3s; }
+.row:hover, .row.is-on { color: var(--ink); transition-duration: 0.08s; }
+.row span { overflow: hidden; text-overflow: clip; }
+
+/* The cue: one hairline across the screen at the film now showing, and what it is. */
+.cue { position: absolute; left: 0; right: 0; top: 0; height: var(--row); align-items: center; white-space: nowrap; transform: translateY(calc(var(--i, 0) * var(--row))); transition: transform 0.65s var(--out), opacity 0.4s; }
+.cue.is-off { opacity: 0; visibility: hidden; }
+.cue.is-still { transition: none; }
+.cue__kind { grid-column: 4 / span 3; }
+.cue__roles { grid-column: 7 / span 4; }
+.cue__watch { grid-column: 11 / span 2; justify-self: start; pointer-events: auto; }
+.cue__line { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--line); overflow: hidden; }
+.cue__line i { position: absolute; inset: 0; background: var(--ink); transform-origin: 0 50%; transform: scaleX(0); }
+
+/* The pointer says what a click on the picture will do. */
+.pointer { position: fixed; left: 0; top: 0; z-index: 11; pointer-events: none; white-space: nowrap; opacity: 0; transition: opacity 0.25s; will-change: transform; }
+.pointer.is-on { opacity: 1; }
+
+/* ---------- One film ---------- */
+.film { position: fixed; inset: 0; z-index: 9; display: grid; grid-template-rows: minmax(0, 1fr) auto; padding: var(--mast) var(--edge) calc(var(--edge) - var(--cap) * 0.33); opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0s 0.3s; }
+[data-view="film"] .film { opacity: 1; visibility: visible; transition: opacity 0.8s 0.35s, visibility 0s; }
+.film__frame { position: relative; min-height: 0; container-type: size; }
+.film__frame iframe { position: absolute; left: 50%; top: 50%; width: min(100cqw, calc(100cqh * 16 / 9)); height: min(100cqh, calc(100cqw * 9 / 16)); transform: translate(-50%, -50%); border: 0; background: #000; }
+.film__strip { align-items: start; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); }
+.film__title { grid-column: 1 / span 3; display: grid; grid-template-columns: 2.7em minmax(0, 1fr); }
+.film__kind { grid-column: 4 / span 3; }
+.film__roles { grid-column: 7 / span 4; }
+.film__nav { grid-column: 11 / span 2; display: flex; gap: 1.8em; white-space: nowrap; }
+
+/* ---------- Information ---------- */
+.info {
+  position: fixed; inset: 0; z-index: 9; overflow-y: auto; overscroll-behavior: contain; outline: none; scrollbar-width: none;
+  opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0s 0.3s;
+  /* The text dissolves before it reaches the name. */
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) calc(var(--mast) - 14px), #000 calc(var(--mast) + 64px));
+          mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) calc(var(--mast) - 14px), #000 calc(var(--mast) + 64px));
+}
+.info::-webkit-scrollbar { display: none; }
+[data-view="information"] .info { opacity: 1; visibility: visible; transition: opacity 0.6s 0.3s, visibility 0s; }
+.info__inner { padding: clamp(250px, 43vh, 520px) var(--edge) calc(var(--edge) - var(--cap) * 0.33); }
+.band { align-items: start; }
+.band + .band { margin-top: clamp(96px, 17vh, 200px); }
+.band__label { grid-column: 1 / span 3; color: var(--dim); position: sticky; top: calc(var(--mast) + 78px); }
+
+.bio { grid-column: 4 / span 8; }
+.bio__born { color: var(--dim); margin-bottom: 2.4em; }
+.bio p:not(.bio__born), .quote p { font-size: clamp(21px, 2.1vw, 34px); font-weight: 400; line-height: 1.19; letter-spacing: -0.017em; text-transform: none; text-indent: 2.3em; text-wrap: pretty; }
+/* Someone else's words: the same reading size, with the opening mark hung in the margin so the text itself stays on the column. */
+.quote { grid-column: 4 / span 8; }
+.quote p { text-indent: -0.44em; }
+.band--quote .band__label a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; text-decoration-color: transparent; transition: color 0.25s, text-decoration-color 0.25s; }
+.band--quote .band__label a:hover { color: var(--ink); text-decoration-color: var(--dim); }
+.bio a { text-decoration: underline; text-decoration-thickness: 0.05em; text-underline-offset: 0.16em; text-decoration-color: var(--dim); transition: text-decoration-color 0.25s; }
+.bio a:hover { text-decoration-color: transparent; }
+
+.band--facts { padding-top: 12px; border-top: 1px solid var(--line); }
+.facts { grid-column: span 3; }
+.facts:nth-child(3) { grid-column: 7 / span 4; }
+.facts:nth-child(4) { grid-column: 11 / span 2; }
+.facts h2 { color: var(--dim); margin-bottom: 1.4em; }
+
+.band--index .band__label { grid-column: 1 / -1; position: static; margin-bottom: 12px; }
+.index { grid-column: 1 / -1; }
+.index a { align-items: baseline; padding: 9px 0 10px; border-top: 1px solid var(--line); transition: color 0.25s; }
+.index li:last-child a { border-bottom: 1px solid var(--line); }
+.index__title { grid-column: 1 / span 3; display: grid; grid-template-columns: 2.7em minmax(0, 1fr); }
+.index__kind { grid-column: 4 / span 3; }
+.index__roles { grid-column: 7 / span 4; }
+.index__watch { grid-column: 11 / span 2; }
+@media (hover: hover) {
+  .index:hover a { color: var(--dim); }
+  .index a:hover { color: var(--ink); }
+}
+
+.band--foot { color: var(--dim); }
+.band--foot p { grid-column: 1 / span 6; }
+#to-top { grid-column: 11 / span 2; justify-self: start; }
+
+/* ---------- Before the first frame ---------- */
+.js .is-opening .role, .js .is-opening .nav, .js .is-opening .row { opacity: 0; }
+.js .is-opening #name-word { visibility: hidden; }
+
+/* ---------- Small laptops: a long description takes the room it needs ---------- */
+@media (min-width: 901px) and (max-width: 1240px) {
+  .cue { grid-template-columns: calc((100% - 11 * var(--gap)) / 4 + 2 * var(--gap)) max-content minmax(0, 1fr) calc((100% - 11 * var(--gap)) / 6 + var(--gap)); }
+  .cue__kind { grid-column: 2; padding-right: 1.6em; }
+  .cue__roles { grid-column: 3; overflow: hidden; }
+  .cue__watch { grid-column: 4; }
+}
+
+/* ---------- Narrow screens ---------- */
+@media (max-width: 900px) {
+  :root { --cap: 11px; --row: 26px; --drop: 8px; --name: clamp(40px, 12vw, 92px); --mast: calc(var(--edge) + var(--name) * 0.74 + 80px); }
+  .mast { row-gap: 18px; }
+  .name { grid-column: 1 / -1; }
+  .role { grid-column: 1 / span 6; }
+  .nav { grid-column: 7 / span 6; }
+  .nav a { padding-block: 6px; }
+
+  .programme { display: flex; flex-direction: column-reverse; }
+  .list { width: 100%; }
+  .cue { position: relative; height: auto; transform: none; transition: opacity 0.4s; white-space: normal; row-gap: 2px; padding-bottom: 10px; margin-bottom: 3px; }
+  .cue__kind { grid-column: 1 / span 9; grid-row: 1; }
+  .cue__roles { grid-column: 1 / span 9; grid-row: 2; color: var(--dim); }
+  .cue__watch { grid-column: 10 / span 3; grid-row: 1 / span 2; justify-self: end; align-self: center; padding: 10px 0; }
+
+  .film__strip { row-gap: 3px; }
+  .film__title { grid-column: 1 / span 8; }
+  .film__nav { grid-column: 9 / span 4; grid-row: 1; justify-content: flex-end; }
+  .film__nav a { padding: 6px 0; margin: -6px 0; }
+  .film__kind, .film__roles { grid-column: 1 / -1; color: var(--dim); }
+
+  .info__inner { padding-top: calc(var(--mast) + 24vh); }
+  .band + .band { margin-top: 84px; }
+  .band__label { grid-column: 1 / -1; position: static; margin-bottom: 16px; }
+  .bio { grid-column: 1 / -1; }
+  .bio p:not(.bio__born), .quote p { font-size: clamp(19px, 5.2vw, 26px); line-height: 1.22; text-indent: 1.8em; }
+  .quote { grid-column: 1 / -1; }
+  .quote p { text-indent: 0; }
+  .band--facts { row-gap: 30px; }
+  .facts, .facts:nth-child(3), .facts:nth-child(4) { grid-column: span 6; }
+  .facts a { display: inline-block; padding: 5px 0; margin: -5px 0; }
+  .index a { row-gap: 2px; padding: 11px 0 12px; }
+  .index__title { grid-column: 1 / span 9; }
+  .index__watch { grid-column: 10 / span 3; grid-row: 1; justify-self: end; }
+  .index__kind { grid-column: 1 / -1; color: var(--dim); padding-left: 2.7em; }
+  .index__roles { display: none; }
+  #to-top { grid-column: 7 / span 6; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cue { transition: opacity 0.2s; }
+  .plate__still, .plate__film { transition-duration: 0.3s; }
+  .shade { transition: none; }
+}
